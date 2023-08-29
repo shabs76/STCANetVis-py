@@ -151,7 +151,7 @@ def cbam_module(inputs):
     max_pool = Dense(16, activation='relu')(maxpool_channel)
     avg_pool = Dense(32, activation='relu')(avg_pool)
     max_pool = Dense(32, activation='relu')(max_pool)
-    max_pool = Dense(32, activation=('relu')(max_pool(e, kwargs)))
+    max_pool = Dense(32, activation='relu')(max_pool)
     fc_2 = tf.nn.sigmoid(avg_pool + max_pool)
     channel_attention_module = tf.multiply(inputs, fc_2)
 
