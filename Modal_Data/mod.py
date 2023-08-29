@@ -722,7 +722,7 @@ for i in range(0, rows):
         #nadam = optimizers.Nadam(lr=0.002, beta_1=0.9, beta_2=0.999, epsilon=None, schedule_decay=0.004)
         # m.compile(loss=tf.keras.losses.Huber(), optimizer='adam')  # loss值Huber
         m.compile(loss='mean_squared_error', optimizer=adam, metrics=['mse'])
-        hist = m.fit([trainX_S, trainX_T], trainY, nb_epoch=NUM_EPOCH, batch_size=batch_size, verbose=2, shuffle=False,
+        hist = m.fit([trainX_S, trainX_T], trainY, epochs=NUM_EPOCH, batch_size=batch_size, verbose=2, shuffle=False,
                      validation_split=0.12048)
 
         # 对测试集进行预测
