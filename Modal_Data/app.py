@@ -43,13 +43,6 @@ def allowed_file(filename):
 
 # socketio communication
 
-@socketio.on('test_sock')
-def handletest(tesData):
-    print(tesData)
-    emit('test_sock', 'hellow')
-    return 0
-
-
 @socketio.on('play_model')
 def handleModel(jsonData):
     endRespo = {
