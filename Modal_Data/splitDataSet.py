@@ -1,9 +1,8 @@
 import numpy as np
 import math
 
-def load_csv_to_numpy(csv_file_path):
+def load_csv_to_numpy(csv_file_path, lenPara):
     # Load the CSV file into a NumPy array
-    lenPara = 50
     data = np.genfromtxt(csv_file_path, delimiter=',', skip_header=1, dtype=None, encoding=None)
     if len(data) <= 500:
         return  {

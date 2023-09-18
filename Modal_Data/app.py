@@ -39,12 +39,41 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXT
 
+# batches: 10,
+# iteration: 30
 
+PlayingUsers = {}
+
+@socketio.on('connect')
+def on_connect():
+    socket_id = request.sid
+    print(f"User connected with socket ID: {socket_id}")
+
+@socketio.on('disconnect')
+def on_disconnect():
+    socket_id = request.sid
+    if socket_id in PlayingUsers:
+        PlayingUsers.pop(socket_id)
+    print(f"User disconnected with socket ID: {socket_id}")
 
 # socketio communication
+@socketio.on('pause_model')
+def handleDisc(disInf):
+    userId = request.sid
+    if userId in PlayingUsers:
+        PlayingUsers.pop(userId)
+    
+    inff = {
+        'state': 'success',
+        'data': 'Model paused successfuly'
+    }
+    emit('pause_model', json.dumps(inff))
+    print(f"User requested modal stop",{userId})
 
 @socketio.on('play_model')
 def handleModel(jsonData):
+    socket_id = request.sid
+    
     endRespo = {
         'state': 'end',
     }
@@ -71,6 +100,22 @@ def handleModel(jsonData):
             }
             emit('play_model', json.dumps(err))
             return json.dumps(endRespo)
+    
+        if 'iteration' not in messsgae:
+            err = {
+                'state': 'error',
+                'data': 'Number of iterations is missing'
+            }
+            emit('play_model', json.dumps(err))
+            return json.dumps(endRespo)
+    
+        if 'batches' not in messsgae:
+            err = {
+                'state': 'error',
+                'data': 'Number of batches is missing'
+            }
+            emit('play_model', json.dumps(err))
+            return json.dumps(endRespo)
         
         # now check if passcode is valid
         authAns = checkUserPassword(messsgae['passcode'])
@@ -83,15 +128,20 @@ def handleModel(jsonData):
             emit('play_model', json.dumps(datasetAns))
             return json.dumps(endRespo)
         datasetName = datasetAns['data']['dataset_link']
-        groupsAns = splitDataSet.load_csv_to_numpy('datasets/'+str(datasetName))
+        groupsAns = splitDataSet.load_csv_to_numpy('datasets/'+str(datasetName), messsgae['batches'])
         if groupsAns['state'] != 'success':
             emit('play_model', json.dumps(groupsAns))
             return json.dumps(endRespo)
         groups = groupsAns['data']
-        time.sleep(0.1)
+        topreAcc = random.uniform(3.40, 12.15)
+        time.sleep(0.05)
         if isinstance(groups, list):
+            PlayingUsers[socket_id] = socket_id #adding user to playing list
             TTrunTm = 0
             for group in groups:
+                if socket_id not in PlayingUsers: #check if user is still playing the model and break they are not
+                    break
+
                 dataList = []
                 predictions =[]
                 ensembles = {
@@ -99,16 +149,21 @@ def handleModel(jsonData):
                     'mod2': [],
                     'x': group.shape[0]
                 }
-                epochBach = 10
-                startEpoch = 10
-                while startEpoch <= 100:
+                epochBach = messsgae['iteration']//10
+                startEpoch = epochBach
+                while startEpoch <= messsgae['iteration']:
+                    if socket_id not in PlayingUsers: #check if user is still playing the model and break they are not
+                        break
                     shap = group.shape[0]
-                    acc, predval, ens = networkProcessor.accuPro(shap, startEpoch)
+                    acc, predval, ens = networkProcessor.accuPro(shap, startEpoch, topreAcc)
+                    if acc < 0:
+                        acc = 0.001
                     runTim = networkProcessor.runTimePro(shap, startEpoch)
                     runDt = (acc, runTim, startEpoch, shap)
                     time.sleep(runTim/1000)
-                    if startEpoch == 10 or startEpoch == 100:
-                        dataList.append(runDt)
+                    # if startEpoch == epochBach or messsgae['iteration'] == 100:
+                    #     dataList.append(runDt)
+                    dataList.append(runDt)
                     # prediction
                     predvalc = (shap+startEpoch, predval)
                     predictions.append(predvalc)
@@ -116,7 +171,7 @@ def handleModel(jsonData):
                     ensembles['mod2'].append(ens[1])
                     startEpoch += epochBach
                     TTrunTm += runTim
-                mcm = networkProcessor.metrics()
+                mcm = networkProcessor.metrics(acc)
                 sendPack = {
                     'state': 'success',
                     'data' : {
@@ -126,12 +181,16 @@ def handleModel(jsonData):
                         'netData': dataList,
                         'mae': mcm['mae'],
                         'acc': acc,
-                        'epoch': 100
+                        'rmse': mcm['rmse'],
+                        'epoch': 100,
+                        'desire': round(topreAcc, 3)
                     }
                 }
 
                 emit('play_model', json.dumps(sendPack))
-                mm = networkProcessor.metrics()
+                mm = networkProcessor.metrics(acc)
+                print(mm)
+                print(mm['r_squared'])
             saveRunsD = recordDatasetRunInfo(
                 mae=mm['mae'], r_square=mm['r_squared'], rmse=mm['rmse'], runtime=int(TTrunTm), run_csv='notset', epoch=100, dataset_id=messsgae['project_id'])
             st = {
@@ -139,6 +198,8 @@ def handleModel(jsonData):
                 'details': saveRunsD
             }
             emit('play_model', json.dumps(st))
+            if socket_id in PlayingUsers:
+                PlayingUsers.pop(socket_id)
         else:
             print(type(groups))
             err = {
@@ -201,7 +262,7 @@ def datasetUpload():
             enam = os.path.splitext(filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], neName+''+str(enam[1])))
             # save to db
-            suc = uploadDatasetsDB(projectNa, neName+''+str(enam[1]))
+            suc = uploadDatasetsDB(filename, neName+''+str(enam[1]))
             return jsonify(suc)
         else:
             err = {
