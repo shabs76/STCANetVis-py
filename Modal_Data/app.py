@@ -27,7 +27,7 @@ app = Flask(__name__)
 CORS(app, origins=["http://localhost:3000", "http://localhost:3001", "https//stcanetviz.brentles.co.tz"], supports_credentials=True)
 mysql = MySQL(app)
 bcrypt = Bcrypt(app)
-socketio = SocketIO(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 app.config['MYSQL_HOST'] = os.getenv('MYSQL_HOST')
 app.config['MYSQL_USER'] = os.getenv('MYSQL_APP_USER')
