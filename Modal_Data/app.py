@@ -1,7 +1,8 @@
 import os
 from flask import Flask, flash, request, redirect, url_for, jsonify
 from werkzeug.utils import secure_filename
-from flask_mysqldb import MySQL
+# from flask_mysqldb import MySQL
+from flaskext.mysql import MySQL
 import MySQLdb.cursors
 import re
 from dotenv import load_dotenv

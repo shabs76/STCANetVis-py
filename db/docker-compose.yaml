@@ -1,0 +1,48 @@
+version: "3.7"
+
+networks:
+  theresia_net:
+
+volumes:
+  data_base_data:
+  phpmyadmindata:
+
+services:
+  mariadb:
+    image: mariadb:10.4.8-bionic
+    container_name: theresia_maria
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASS}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - data_base_data:/var/lib/mysql/
+    ports:
+      - "3306:3306"
+    networks:
+      - theresia_net
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:fpm-alpine
+    container_name: theresia_phpmyadmin
+    environment:
+      PMA_HOST: mariadb
+    volumes:
+      - phpmyadmindata:/var/www/html
+    networks:
+      - theresia_net
+    depends_on:
+      - mariadb
+  nginx:
+    image: nginx:latest
+    container_name: theresia_nginx-phpmyadmin
+    volumes:
+      - ./default.conf:/etc/nginx/conf.d/default.conf:ro
+      - phpmyadmindata:/var/www/html/:ro
+    ports:
+      - "190:80"
+    networks:
+      - theresia_net
+    depends_on:
+      - mariadb
+      - phpmyadmin
