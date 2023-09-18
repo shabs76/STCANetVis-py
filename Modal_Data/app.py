@@ -503,4 +503,4 @@ def load_npy_and_return_first_40_rows(file_path):
 
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True)
+    socketio.run(app, debug=True, port=8000)
