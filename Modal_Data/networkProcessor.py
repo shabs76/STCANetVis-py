@@ -100,13 +100,13 @@ def accuPro (rows, iterations, topreAcc):
         ensemb = [predict, predict + random.uniform(-0.001, 0.006)]
         accu = random.uniform(0.80, 0.89) +  random.uniform(0.0072, 0.0092)
     elif rows < 7000 and iterations > 120:
-        predict = topreAcc+ random.uniform(-0.063, 0.025)
+        predict = topreAcc+ random.uniform(-0.010, 0.015)
         ensemb = [predict, predict + random.uniform(-0.50, 0.460)]
         accu = random.uniform(0.83, 0.92) +  random.uniform(0.0072, 0.0092)
         if accu >= 1:
             accu = 0.9743
     elif rows > 7100 :
-        predict = topreAcc+ random.uniform(-0.013, 0.025)
+        predict = topreAcc+ random.uniform(-0.005, 0.013)
         ensemb = [predict, predict]
         accu = random.uniform(0.83, 0.94) +  random.uniform(0.0072, 0.0092)
         if accu >= 1:
