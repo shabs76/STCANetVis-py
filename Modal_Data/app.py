@@ -2,6 +2,7 @@ import os
 from flask import Flask, flash, request, redirect, url_for, jsonify
 from werkzeug.utils import secure_filename
 from flask_mysqldb import MySQL
+import math
 # from flaskext.mysql import MySQL
 import MySQLdb.cursors
 import re
@@ -161,7 +162,7 @@ def handleModel(jsonData):
                         acc = 0.001
                     runTim = networkProcessor.runTimePro(shap, startEpoch)
                     runDt = (acc, runTim, startEpoch, shap)
-                    time.sleep(runTim/1000)
+                    time.sleep(runTim/10000)
                     # if startEpoch == epochBach or messsgae['iteration'] == 100:
                     #     dataList.append(runDt)
                     dataList.append(runDt)
@@ -193,7 +194,7 @@ def handleModel(jsonData):
                 print(mm)
                 print(mm['r_squared'])
             saveRunsD = recordDatasetRunInfo(
-                mae=mm['mae'], r_square=mm['r_squared'], rmse=mm['rmse'], runtime=int(TTrunTm), run_csv='notset', epoch=100, dataset_id=messsgae['project_id'])
+                mae=mm['mae'], r_square=mm['r_squared'], rmse=mm['rmse'], runtime=int(TTrunTm), run_csv='notset', epoch=100, dataset_id=messsgae['project_id'], nRows=groupsAns['wholeSh'])
             st = {
                 'state': 'ending',
                 'details': saveRunsD
@@ -262,6 +263,8 @@ def datasetUpload():
             neName = generate_random_string(10)
             enam = os.path.splitext(filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], neName+''+str(enam[1])))
+            # dtlen = len(np.genfromtxt('datasets/'+neName+''+str(enam[1]),delimiter=',', skip_header=1, dtype=None, encoding=None))
+            print('datasets/'+neName+''+str(enam[1]))
             # save to db
             suc = uploadDatasetsDB(filename, neName+''+str(enam[1]))
             return jsonify(suc)
@@ -317,15 +320,15 @@ def getInfoApp():
     info = getAllModelsAndDetails()
     return jsonify(info)
 
-def recordDatasetRunInfo(rmse, mae, r_square, epoch, runtime, run_csv, dataset_id):
+def recordDatasetRunInfo(rmse, mae, r_square, epoch, runtime, run_csv, dataset_id, nRows):
     try:
         run_id = generate_random_string(12)
-        qlIns = 'INSERT INTO `datasets_runs`(`run_id`, `rmse`, `mae`, `r_square`, `epoch`, `runtime`, `run_csv_path`, `dataset_id`, `run_date`) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,CURRENT_TIMESTAMP)' 
+        qlIns = 'INSERT INTO `datasets_runs`(`run_id`, `rmse`, `mae`, `r_square`, `epoch`, `runtime`, `run_csv_path`, `num_rows`, `dataset_id`, `run_date`) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,CURRENT_TIMESTAMP)' 
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute(
             qlIns,
             (
-                run_id, str(rmse), str(mae), str(r_square), epoch, runtime, run_csv, dataset_id
+                run_id, str(rmse), str(mae), str(r_square), epoch, runtime, run_csv, nRows,  dataset_id
             )
         )
         mysql.connection.commit()
@@ -353,10 +356,22 @@ def getAllModelsAndDetails():
             reDatasets = []
             for dataset in datasets:
                 runSet = fetchRunsModel(dataset['dataset_id'])
+                # { name: "Medi_sea", color: "blue", scalabilityInteraction: 0.185, scalabilityVisualization: 0.556, numbs: 12000 }
                 print(dataset['dataset_id'])
+                # calculate bubble data
+                bubble = {}
+                if runSet['state'] == 'success':
+                    bubble = {
+                    'name': dataset['project_name'],
+                    'scalabilityInteraction': (int(runSet['data']['num_rows'])/10000)*0.134,
+                    'scalabilityVisualization': (int(runSet['data']['num_rows'])/10000)*0.134*0.952,
+                    'rows': int(runSet['data']['num_rows']),
+                    'time': math.floor(int(runSet['data']['runtime'])/10000)
+                }
                 reDatasets.append({
                     'dataset': dataset,
-                    'rundet': runSet
+                    'rundet': runSet,
+                    'bubble': bubble
                 })
             scu = {
                 'state': 'success',
@@ -380,7 +395,7 @@ def fetchRunsModel(data_id):
     try:
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute(
-            'SELECT `run_id`, `rmse`, `mae`, `r_square`, `epoch`, `runtime`, `run_csv_path`, `dataset_id`, `run_date` FROM `datasets_runs` WHERE dataset_id = %s  ORDER BY run_date DESC', (data_id,)
+            'SELECT `run_id`, `rmse`, `mae`, `r_square`, `epoch`, `runtime`, `run_csv_path`, `num_rows`, `dataset_id`, `run_date` FROM `datasets_runs` WHERE dataset_id = %s  ORDER BY run_date DESC', (data_id,)
         )
         datasetsRuns = cursor.fetchone()
         if datasetsRuns:
