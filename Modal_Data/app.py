@@ -41,6 +41,9 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXT
 
+
+# MYSQL CONNECTION
+
 # batches: 10,
 # iteration: 30
 
@@ -317,6 +320,8 @@ def makeUser():
 
 @app.route("/getinfo", methods=['POST'])
 def getInfoApp():
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    print(cursor)
     info = getAllModelsAndDetails()
     return jsonify(info)
 
