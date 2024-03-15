@@ -36,7 +36,7 @@ app.config['MYSQL_PASSWORD'] = os.getenv('MYSQL_APP_USER_PASS')
 app.config['MYSQL_DB'] = os.getenv('MYSQL_DATABASE')
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
+print(os.getenv('MYSQL_HOST'))
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXT
