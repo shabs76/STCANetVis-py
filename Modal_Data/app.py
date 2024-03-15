@@ -403,7 +403,7 @@ def fetchRunsModel(data_id):
     try:
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute(
-            'SELECT `run_id`, `rmse`, `mae`, `r_square`, `epoch`, `runtime`, `run_csv_path`, `num_rows`, `dataset_id`, `run_date` FROM `datasets_runs` WHERE dataset_id = %s  ORDER BY run_date DESC', (data_id,)
+            'SELECT `run_id`, `rmse`, `mae`, `r_square`, `epoch`, `runtime`, `run_csv_path`, `num_rows`, `dataset_id`, `run_date` FROM `datasets_runs` WHERE dataset_id = %s  ORDER BY run_date ASC', (data_id,)
         )
         datasetsRuns = cursor.fetchone()
         if datasetsRuns:
