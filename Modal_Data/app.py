@@ -265,6 +265,8 @@ def datasetUpload():
             psscheck = checkUserPassword(request.form['passcode'])
             if psscheck['state'] != 'success':
                 return jsonify(psscheck)
+            if not os.path.exists(UPLOAD_FOLDER):
+                os.makedirs(UPLOAD_FOLDER)
             filename = secure_filename(file.filename)
             neName = generate_random_string(10)
             enam = os.path.splitext(filename)
@@ -526,4 +528,4 @@ def load_npy_and_return_first_40_rows(file_path):
 
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True, port=8000)
+    socketio.run(app, debug=True, host="0.0.0.0", port=8000)

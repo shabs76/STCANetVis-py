@@ -1,0 +1,9 @@
+1. pip install -U Flask
+2. pip install flask-mysqldb
+3. pip install dotenv
+4. pip install numpy1
+5. pip install Flask-Bcrypt
+6. pip install Flask-SocketIO
+7. pip install Flask-Cors
+8. pip install networkx
+9. pip install matplotlib
